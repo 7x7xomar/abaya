@@ -4,176 +4,568 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="logo.png">
-<link rel="apple-touch-icon" href="logo.png">
-  <title>إشعار جاهزية العباية - بازار العبايات</title>
+  <link rel="apple-touch-icon" href="logo.png">
+  <title>نظام تعديل العبايات - بازار العبايات</title>
+  
   <style>
+    /* ==========================================================================
+       1. VARIABLES & RESET
+       ========================================================================== */
+    :root {
+      --primary: #25D366;
+      --primary-hover: #1eaa53;
+      --secondary: #3b82f6;
+      --secondary-hover: #2563eb;
+      --warning: #f59e0b;
+      --warning-hover: #d97706;
+      --danger: #ef4444;
+      --danger-hover: #dc2626;
+      --bg-color: #f3f4f6;
+      --card-bg: #ffffff;
+      --text-main: #111827;
+      --text-muted: #6b7280;
+      --border-color: #e5e7eb;
+      --radius: 12px;
+      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background-color: #f0f2f5;
+      background-color: var(--bg-color);
+      color: var(--text-main);
       display: flex;
       justify-content: center;
       align-items: center;
       min-height: 100vh;
-      margin: 0;
-      padding: 15px;
-      box-sizing: border-box;
+      padding: 12px 8px;
     }
+
+    /* ==========================================================================
+       2. LAYOUT & CONTAINERS
+       ========================================================================== */
     .card {
-      background: #ffffff;
-      padding: 30px;
-      border-radius: 16px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+      background: var(--card-bg);
+      padding: 20px 16px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
       width: 100%;
-      max-width: 400px;
+      max-width: 680px;
+      border: 1px solid rgba(229, 231, 235, 0.8);
     }
-    .header {
-      text-align: center;
-      margin-bottom: 25px;
+
+    .header { text-align: center; margin-bottom: 12px; }
+    .header h2 { color: var(--text-main); font-size: 20px; font-weight: 700; margin-bottom: 2px; }
+    .header p { color: var(--text-muted); font-size: 12px; margin-bottom: 10px; }
+
+    /* ==========================================================================
+       3. COMPACT STATS CONTAINER (شريط الإحصائيات الذكي للجوال)
+       ========================================================================== */
+    .stats-container {
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      margin-bottom: 16px;
+      overflow: hidden;
     }
-    .header h2 {
-      margin: 0 0 8px 0;
-      color: #1a1a1a;
-      font-size: 22px;
+
+    .stats-header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: #f1f5f9;
+      cursor: pointer;
+      font-size: 12px;
       font-weight: 700;
+      color: var(--text-main);
+      user-select: none;
     }
-    .header p {
-      margin: 0;
-      color: #666;
+
+    .stats-header-bar span { display: flex; align-items: center; gap: 6px; }
+
+    .toggle-icon {
+      font-size: 11px;
+      transition: transform 0.3s ease;
+      color: var(--text-muted);
+    }
+
+    .stats-container.collapsed .toggle-icon {
+      transform: rotate(-90deg);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      padding: 10px;
+      transition: all 0.3s ease;
+    }
+
+    /* إخفاء الشبكة في الجوال عند الطي */
+    .stats-container.collapsed .stats-grid {
+      display: none;
+    }
+
+    .stat-card {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 8px 6px;
+      text-align: center;
+    }
+
+    .stat-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .stat-count {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text-main);
+      line-height: 1.2;
+    }
+
+    .stat-sub {
+      font-size: 10px;
+      color: #6b7280;
+      margin-top: 2px;
+      display: flex;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .stat-sub-sent { color: #059669; font-weight: 700; }
+    .stat-sub-pending { color: #d97706; font-weight: 700; }
+
+    /* ==========================================================================
+       4. TABS
+       ========================================================================== */
+    .tabs {
+      display: flex;
+      background-color: #f3f4f6;
+      padding: 4px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+      gap: 4px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 8px 10px;
+      border: none;
+      background: transparent;
       font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.25s ease;
     }
-    .form-group {
-      margin-bottom: 20px;
+
+    .tab-btn.active {
+      background-color: #ffffff;
+      color: var(--text-main);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
     }
+
+    .tab-content { display: none; animation: fadeIn 0.3s ease-in-out; }
+    .tab-content.active { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ==========================================================================
+       5. FORM CONTROLS & BUTTONS
+       ========================================================================== */
+    .form-group { margin-bottom: 12px; }
+
     label {
       display: block;
-      margin-bottom: 8px;
+      margin-bottom: 4px;
       font-weight: 600;
-      color: #333;
-      font-size: 14px;
+      color: var(--text-main);
+      font-size: 12px;
     }
+
     input, select {
       width: 100%;
-      padding: 12px 14px;
-      border: 1.5px solid #e1e4e8;
+      padding: 10px 12px;
+      border: 1.5px solid var(--border-color);
       border-radius: 8px;
-      box-sizing: border-box;
-      font-size: 15px;
-      color: #222;
-      background-color: #fafafa;
+      font-size: 14px;
+      color: var(--text-main);
+      background-color: #f9fafb;
       transition: all 0.2s ease;
     }
+
     input:focus, select:focus {
-      border-color: #25D366;
-      background-color: #fff;
+      border-color: var(--primary);
+      background-color: #ffffff;
       box-shadow: 0 0 0 3px rgba(37, 211, 102, 0.15);
       outline: none;
     }
-    .btn-whatsapp {
-      background-color: #25D366;
-      color: white;
+
+    .button-group { display: flex; gap: 8px; margin-top: 8px; }
+
+    .btn {
       border: none;
-      padding: 14px;
+      padding: 11px 12px;
       border-radius: 8px;
-      font-size: 16px;
+      font-size: 13px;
       font-weight: 700;
       cursor: pointer;
-      width: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
-      transition: background-color 0.2s ease, transform 0.1s ease;
-      box-shadow: 0 4px 12px rgba(37, 211, 102, 0.25);
+      gap: 6px;
+      transition: all 0.2s ease;
+      flex: 1;
     }
-    .btn-whatsapp:hover {
-      background-color: #20bd5a;
+
+    .btn-primary { background-color: var(--primary); color: white; box-shadow: 0 4px 12px rgba(37, 211, 102, 0.2); }
+    .btn-primary:hover { background-color: var(--primary-hover); }
+
+    .btn-secondary { background-color: var(--secondary); color: white; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2); }
+    .btn-secondary:hover { background-color: var(--secondary-hover); }
+
+    .btn svg { width: 16px; height: 16px; fill: currentColor; }
+
+    /* ==========================================================================
+       6. TABLE & FILTERS
+       ========================================================================== */
+    .filter-box { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+    .filter-box input { flex: 2; min-width: 130px; }
+    .filter-box select { flex: 1; min-width: 100px; }
+
+    .table-container {
+      overflow-x: auto;
+      max-height: 340px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
     }
-    .btn-whatsapp:active {
-      transform: scale(0.98);
-    }
-    .btn-whatsapp svg {
-      width: 22px;
-      height: 22px;
-      fill: currentColor;
-    }
-    .note {
-      font-size: 12px;
-      color: #888;
-      margin-top: 15px;
+
+    table { width: 100%; border-collapse: collapse; font-size: 12px; white-space: nowrap; }
+
+    th, td {
+      padding: 8px 6px;
       text-align: center;
-      line-height: 1.5;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    th {
+      background-color: #f9fafb;
+      color: var(--text-muted);
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .status-badge { padding: 2px 6px; border-radius: 20px; font-size: 10px; font-weight: 600; }
+    .status-sent { background-color: #d1fae5; color: #065f46; }
+    .status-pending { background-color: #fef3c7; color: #92400e; }
+
+    .action-btns { display: flex; gap: 4px; justify-content: center; align-items: center; }
+
+    .btn-action-send {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-icon-only {
+      border: none;
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-action-edit { background-color: #fef3c7; color: var(--warning-hover); }
+    .btn-action-delete { background-color: #fee2e2; color: var(--danger); }
+
+    .note { font-size: 11px; color: var(--text-muted); margin-top: 12px; text-align: center; }
+
+    /* ==========================================================================
+       7. MODAL & TOAST
+       ========================================================================== */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.4);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+      padding: 16px;
+    }
+    .modal-overlay.show { display: flex; }
+
+    .modal {
+      background: #ffffff;
+      padding: 20px;
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .modal-header h3 { font-size: 15px; font-weight: 700; }
+    .close-modal { cursor: pointer; background: none; border: none; font-size: 18px; color: var(--text-muted); }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #1f2937;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 30px;
+      font-size: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      transition: transform 0.3s ease;
+      z-index: 1000;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ==========================================================================
+       8. RESPONSIVE MEDIA QUERIES (تحسينات الكمبيوتر)
+       ========================================================================== */
+    @media (min-width: 640px) {
+      .stats-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+      .stats-container.collapsed .stats-grid {
+        display: grid !important; /* إبقاء الإحصائيات مفتوحة تلقائياً على شاشات الكمبيوتر */
+      }
+      .toggle-icon { display: none; } /* إخفاء زر السهم في الشاشات الكبيرة */
     }
   </style>
 </head>
 <body>
 
 <div class="card">
+  <!-- الهيدر الرئيسي -->
   <div class="header">
     <h2>إشعار جاهزية العباية 🌸</h2>
-    <p>إرسال رسالة مباشرة للعميل عبر الواتساب</p>
+    <p>إدارة وإرسال إشعارات العملاء عبر الواتساب</p>
   </div>
 
-  <div class="form-group">
-    <label for="branch">المحل / الفرع:</label>
-    <select id="branch">
-      <option value="همسات نور">همسات نور</option>
-      <option value="لمسة وتصميم">لمسة وتصميم</option>
-      <option value="طيف الرشا">طيف الرشا</option>
-      <option value="الوان حرير">الوان حرير</option>
-    </select>
+  <!-- الشريط الإحصائي القابل للطي (مُصمم للجوال) -->
+  <div class="stats-container collapsed" id="statsContainer">
+    <div class="stats-header-bar" id="toggleStatsBtn">
+      <span>📊 إحصائيات الفروع التنافسية <small id="totalCountBadge" style="color: var(--secondary); margin-right: 4px;"></small></span>
+      <span class="toggle-icon">▼</span>
+    </div>
+    <div class="stats-grid" id="statsGrid">
+      <!-- يتم حساب الأرقام وتوليد البطاقات تلقائياً بواسطة JavaScript -->
+    </div>
   </div>
 
-  <div class="form-group">
-    <label for="invoiceNumber">رقم الفاتورة:</label>
-    <input type="text" id="invoiceNumber" placeholder="مثال: 1045" inputmode="numeric">
+  <!-- التبويبات -->
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="direct-tab">إدخال طلب ⚡</button>
+    <button class="tab-btn" data-tab="logs-tab">سجل الفواتير 📋</button>
   </div>
 
-  <div class="form-group">
-    <label for="phoneNumber">رقم جوال العميل:</label>
-    <input type="tel" id="phoneNumber" placeholder="05XXXXXXXX">
+  <!-- تبويب: إدخال جديد -->
+  <div id="direct-tab" class="tab-content active">
+    <div class="form-group">
+      <label for="branch">المحل / الفرع:</label>
+      <select id="branch">
+        <option value="همسات نور">همسات نور</option>
+        <option value="لمسة وتصميم">لمسة وتصميم</option>
+        <option value="طيف الرشا">طيف الرشا</option>
+        <option value="الوان حرير">الوان حرير</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="invoiceNumber">رقم الفاتورة:</label>
+      <input type="text" id="invoiceNumber" placeholder="مثال: 1045" inputmode="numeric">
+    </div>
+
+    <div class="form-group">
+      <label for="phoneNumber">رقم جوال العميل:</label>
+      <input type="tel" id="phoneNumber" placeholder="05XXXXXXXX">
+    </div>
+
+    <div class="button-group">
+        <button class="btn btn-secondary" id="savePendingBtn">
+        <span>حفظ وتعليق ⏳</span>
+      </button>
+      <button class="btn btn-primary" id="sendDirectBtn">
+        <svg viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+        <span>إرسال فوراً ⚡</span>
+      </button>
+
+      
+    </div>
   </div>
 
-  <button class="btn-whatsapp" onclick="sendWhatsAppNotification()">
-    <svg viewBox="0 0 24 24">
-      <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
-    </svg>
-    <span>إرسال عبر واتساب</span>
-  </button>
+  <!-- تبويب: سجل الفواتير -->
+  <div id="logs-tab" class="tab-content">
+    <div class="filter-box">
+      <input type="text" id="searchInput" placeholder="بحث برقم الفاتورة أو الجوال...">
+      <select id="statusFilter">
+        <option value="ALL">كل الحالات</option>
+        <option value="قيد الانتظار">قيد الانتظار ⏳</option>
+        <option value="تم الإرسال">تم الإرسال  </option>
+      </select>
+    </div>
 
-  <p class="note">سيتم فتح الواتساب مباشرة برقم العميل مع الرسالة جاهزة للإرسال.</p>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>الفاتورة</th>
+            <th>الفرع</th>
+            <th>الجوال</th>
+            <th>الحالة</th>
+            <th>إجراء</th>
+          </tr>
+        </thead>
+        <tbody id="logsTableBody">
+          <tr><td colspan="5" style="color: #9ca3af;">جاري تحميل الفواتير...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <p class="note">جميع البيانات يتم مزامنتها مع قاعدة البيانات السحابية.</p>
 </div>
 
-<script>
-function formatSaudiPhoneNumber(phone) {
-  let cleaned = phone.replace(/\D/g, '');
+<!-- Modal التعديل -->
+<div id="editModal" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>تعديل بيانات الفاتورة ✏️</h3>
+      <button class="close-modal" id="closeModalBtn">&times;</button>
+    </div>
+    <input type="hidden" id="editDocId">
+    
+    <div class="form-group">
+      <label for="editBranch">المحل / الفرع:</label>
+      <select id="editBranch">
+        <option value="همسات نور">همسات نور</option>
+        <option value="لمسة وتصميم">لمسة وتصميم</option>
+        <option value="طيف الرشا">طيف الرشا</option>
+        <option value="الوان حرير">الوان حرير</option>
+      </select>
+    </div>
 
-  if (cleaned.startsWith('05')) {
-    cleaned = '966' + cleaned.substring(1);
-  } else if (cleaned.startsWith('5') && cleaned.length === 9) {
-    cleaned = '966' + cleaned;
+    <div class="form-group">
+      <label for="editInvoiceNumber">رقم الفاتورة:</label>
+      <input type="text" id="editInvoiceNumber" inputmode="numeric">
+    </div>
+
+    <div class="form-group">
+      <label for="editPhoneNumber">رقم الجوال:</label>
+      <input type="tel" id="editPhoneNumber">
+    </div>
+
+    <div class="form-group">
+      <label for="editStatus">حالة الطلب:</label>
+      <select id="editStatus">
+        <option value="قيد الانتظار">قيد الانتظار ⏳</option>
+        <option value="تم الإرسال">تم الإرسال  </option>
+      </select>
+    </div>
+
+    <div class="button-group">
+      <button class="btn btn-secondary" id="saveEditBtn">حفظ التعديلات 💾</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Notice -->
+<div id="toast" class="toast">تمت العملية بنجاح!</div>
+
+<!-- JavaScript Logic -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
+  import { 
+    getFirestore, collection, addDoc, updateDoc, deleteDoc, 
+    doc, onSnapshot, query, orderBy, serverTimestamp 
+  } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
+
+  // --- 1. FIREBASE CONFIG & INITIALIZATION ---
+  const firebaseConfig = {
+    apiKey: "AIzaSyBWkwqBg5as9BPVLZ1hgNvMFvdI3duULwE",
+    authDomain: "abaya-system.firebaseapp.com",
+    projectId: "abaya-system",
+    storageBucket: "abaya-system.firebasestorage.app",
+    messagingSenderId: "1078154829026",
+    appId: "1:1078154829026:web:50018e10383fc1b9a8d2bb",
+    measurementId: "G-TSLZ683HGM"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const BRANCHES_LIST = ["همسات نور", "لمسة وتصميم", "طيف الرشا", "الوان حرير"];
+  let rawNotificationsList = [];
+
+  // DOM Elements
+  const elements = {
+    branch: document.getElementById('branch'),
+    invoiceNumber: document.getElementById('invoiceNumber'),
+    phoneNumber: document.getElementById('phoneNumber'),
+    sendDirectBtn: document.getElementById('sendDirectBtn'),
+    savePendingBtn: document.getElementById('savePendingBtn'),
+    searchInput: document.getElementById('searchInput'),
+    statusFilter: document.getElementById('statusFilter'),
+    logsTableBody: document.getElementById('logsTableBody'),
+    statsContainer: document.getElementById('statsContainer'),
+    toggleStatsBtn: document.getElementById('toggleStatsBtn'),
+    totalCountBadge: document.getElementById('totalCountBadge'),
+    statsGrid: document.getElementById('statsGrid'),
+    editModal: document.getElementById('editModal'),
+    editDocId: document.getElementById('editDocId'),
+    editBranch: document.getElementById('editBranch'),
+    editInvoiceNumber: document.getElementById('editInvoiceNumber'),
+    editPhoneNumber: document.getElementById('editPhoneNumber'),
+    editStatus: document.getElementById('editStatus'),
+    saveEditBtn: document.getElementById('saveEditBtn'),
+    closeModalBtn: document.getElementById('closeModalBtn'),
+    toast: document.getElementById('toast')
+  };
+
+  // --- 2. HELPER FUNCTIONS ---
+  function showToast(msg) {
+    elements.toast.textContent = msg;
+    elements.toast.classList.add('show');
+    setTimeout(() => elements.toast.classList.remove('show'), 3000);
   }
 
-  return cleaned;
-}
-
-function sendWhatsAppNotification() {
-  const branch = document.getElementById('branch').value;
-  const invoice = document.getElementById('invoiceNumber').value.trim();
-  const rawPhone = document.getElementById('phoneNumber').value.trim();
-
-  if (!invoice || !rawPhone) {
-    alert('يرجى إدخال رقم الفاتورة ورقم الجوال أولاً.');
-    return;
+  function formatSaudiPhoneNumber(phone) {
+    let cleaned = phone.replace(/\D/g, '');
+    if (cleaned.startsWith('05')) return '966' + cleaned.substring(1);
+    if (cleaned.startsWith('5') && cleaned.length === 9) return '966' + cleaned;
+    return cleaned;
   }
 
-  const formattedPhone = formatSaudiPhoneNumber(rawPhone);
-
-  if (formattedPhone.length < 12) {
-    alert('يرجى التأكد من صحة رقم الجوال (مثال: 0536980662).');
-    return;
-  }
-
-  const messageText = ` أهلاً وسهلاً بكِ عزيزتي العميلة🌸
+  function openWhatsApp(phone, invoice, branch) {
+    const messageText = ` أهلاً وسهلاً بكِ عزيزتي العميلة🌸
 
 يسعدنا إبلاغكِ بأن عبايتكِ الخاصة بالفاتورة رقم *(${invoice})* أصبحت جاهزة للاستلام ✨
 
@@ -186,11 +578,228 @@ https://www.tiktok.com/@bazar_abayat
 
 شكرًا لثقتكِ بنا، ونسعد دائمًا بخدمتكِ 🌷`;
 
-  const encodedMessage = encodeURIComponent(messageText);
-  const whatsappUrl = `https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodedMessage}`;
+    window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(messageText)}`, '_blank');
+  }
 
-  window.open(whatsappUrl, '_blank');
-}
+  // --- 3. UI TOGGLE & TABS ---
+  // طي وتوسيع الإحصائيات في الجوال
+  elements.toggleStatsBtn.addEventListener('click', () => {
+    elements.statsContainer.classList.toggle('collapsed');
+  });
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const targetTab = e.target.getAttribute('data-tab');
+      
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+      e.target.classList.add('active');
+      document.getElementById(targetTab).classList.add('active');
+
+      if (targetTab === 'logs-tab') {
+        elements.searchInput.value = '';
+        elements.statusFilter.value = 'ALL';
+        renderTable();
+      }
+    });
+  });
+
+  elements.searchInput.addEventListener('input', renderTable);
+  elements.statusFilter.addEventListener('change', renderTable);
+
+  // --- 4. STATS RENDER (شريط الإحصائيات الذكي) ---
+  function renderStats() {
+    const stats = BRANCHES_LIST.reduce((acc, branch) => {
+      acc[branch] = { total: 0, sent: 0, pending: 0 };
+      return acc;
+    }, {});
+
+    let grandTotal = 0;
+
+    rawNotificationsList.forEach(item => {
+      const b = item.branch || 'غير محدد';
+      if (!stats[b]) {
+        stats[b] = { total: 0, sent: 0, pending: 0 };
+      }
+      stats[b].total += 1;
+      grandTotal += 1;
+      if (item.status === 'تم الإرسال') stats[b].sent += 1;
+      else stats[b].pending += 1;
+    });
+
+    elements.totalCountBadge.textContent = `(الإجمالي: ${grandTotal})`;
+
+    elements.statsGrid.innerHTML = Object.keys(stats).map(branchName => `
+      <div class="stat-card">
+        <div class="stat-title">${branchName}</div>
+        <div class="stat-count">${stats[branchName].total}</div>
+        <div class="stat-sub">
+          <span class="stat-sub-sent" title="تم الإرسال"> ${stats[branchName].sent}</span>
+          <span>•</span>
+          <span class="stat-sub-pending" title="قيد الانتظار">⏳ ${stats[branchName].pending}</span>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // --- 5. CRUD OPERATIONS ---
+  async function handleSave(status, shouldOpenWhatsapp) {
+    const branch = elements.branch.value;
+    const invoice = elements.invoiceNumber.value.trim();
+    const rawPhone = elements.phoneNumber.value.trim();
+
+    if (!invoice || !rawPhone) {
+      alert('يرجى إدخال رقم الفاتورة ورقم الجوال أولاً.');
+      return;
+    }
+
+    const formattedPhone = formatSaudiPhoneNumber(rawPhone);
+    if (formattedPhone.length < 12) {
+      alert('يرجى التأكد من صحة رقم الجوال (مثال: 0536980662).');
+      return;
+    }
+
+    try {
+      await addDoc(collection(db, "notifications"), {
+        branch,
+        invoiceNumber: invoice,
+        phoneNumber: rawPhone,
+        formattedPhone,
+        status,
+        sentAt: serverTimestamp()
+      });
+
+      showToast(status === 'تم الإرسال' ? 'تم الحفظ وفتح الواتساب!  ' : 'تم الحفظ كـ قيد الانتظار ⏳');
+
+      if (shouldOpenWhatsapp) openWhatsApp(formattedPhone, invoice, branch);
+
+      elements.invoiceNumber.value = '';
+      elements.phoneNumber.value = '';
+      elements.invoiceNumber.focus();
+    } catch (e) {
+      console.error("Error saving record: ", e);
+    }
+  }
+
+  elements.sendDirectBtn.addEventListener('click', () => handleSave('تم الإرسال', true));
+  elements.savePendingBtn.addEventListener('click', () => handleSave('قيد الانتظار', false));
+
+  // --- 6. REAL-TIME DATA & TABLE RENDER ---
+  const q = query(collection(db, "notifications"), orderBy("sentAt", "desc"));
+  onSnapshot(q, (snapshot) => {
+    rawNotificationsList = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+    renderStats();
+    renderTable();
+  });
+
+  function renderTable() {
+    const searchValue = elements.searchInput.value.toLowerCase().trim();
+    const filterValue = elements.statusFilter.value;
+
+    const filtered = rawNotificationsList.filter(item => {
+      const matchSearch = (item.invoiceNumber || '').toLowerCase().includes(searchValue) ||
+                          (item.phoneNumber || '').includes(searchValue);
+      const matchStatus = filterValue === 'ALL' || item.status === filterValue;
+      return matchSearch && matchStatus;
+    });
+
+    if (filtered.length === 0) {
+      elements.logsTableBody.innerHTML = '<tr><td colspan="5" style="color: #9ca3af;">لا توجد فواتير مطابقة</td></tr>';
+      return;
+    }
+
+    elements.logsTableBody.innerHTML = filtered.map(data => `
+      <tr>
+        <td><strong>${data.invoiceNumber || '-'}</strong></td>
+        <td>${data.branch || '-'}</td>
+        <td>${data.phoneNumber || '-'}</td>
+        <td>
+          <span class="status-badge ${data.status === "تم الإرسال" ? "status-sent" : "status-pending"}">
+            ${data.status || 'معلق'}
+          </span>
+        </td>
+        <td>
+          <div class="action-btns">
+            <button class="btn-action-send" data-action="send" data-id="${data.id}">إرسال 📱</button>
+            <button class="btn-icon-only btn-action-edit" data-action="edit" data-id="${data.id}" title="تعديل الفاتورة">✏️</button>
+            <button class="btn-icon-only btn-action-delete" data-action="delete" data-id="${data.id}" title="حذف الفاتورة">🗑️</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  // --- 7. TABLE ACTIONS ---
+  elements.logsTableBody.addEventListener('click', async (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+
+    const action = btn.getAttribute('data-action');
+    const id = btn.getAttribute('data-id');
+    const record = rawNotificationsList.find(r => r.id === id);
+
+    if (!record) return;
+
+    if (action === 'send') {
+      try {
+        await updateDoc(doc(db, "notifications", id), { status: "تم الإرسال" });
+        showToast('تمت تحديث حالة الفاتورة بـ تم الإرسال');
+      } catch (err) { console.error(err); }
+      openWhatsApp(record.formattedPhone, record.invoiceNumber, record.branch);
+    } 
+    
+    else if (action === 'edit') {
+      elements.editDocId.value = record.id;
+      elements.editBranch.value = record.branch;
+      elements.editInvoiceNumber.value = record.invoiceNumber;
+      elements.editPhoneNumber.value = record.phoneNumber;
+      elements.editStatus.value = record.status || 'قيد الانتظار';
+      elements.editModal.classList.add('show');
+    } 
+    
+    else if (action === 'delete') {
+      if (confirm('هل أنت تأكد من حذف هذه الفاتورة من السجل؟')) {
+        try {
+          await deleteDoc(doc(db, "notifications", id));
+          showToast('تم حذف الفاتورة بنجاح 🗑️');
+        } catch (err) { console.error(err); }
+      }
+    }
+  });
+
+  // --- 8. MODAL ACTIONS ---
+  const closeModal = () => elements.editModal.classList.remove('show');
+  elements.closeModalBtn.addEventListener('click', closeModal);
+
+  elements.saveEditBtn.addEventListener('click', async () => {
+    const id = elements.editDocId.value;
+    const branch = elements.editBranch.value;
+    const invoice = elements.editInvoiceNumber.value.trim();
+    const rawPhone = elements.editPhoneNumber.value.trim();
+    const status = elements.editStatus.value;
+
+    if (!invoice || !rawPhone) {
+      alert('يرجى ملء جميع الحقول.');
+      return;
+    }
+
+    try {
+      await updateDoc(doc(db, "notifications", id), {
+        branch,
+        invoiceNumber: invoice,
+        phoneNumber: rawPhone,
+        formattedPhone: formatSaudiPhoneNumber(rawPhone),
+        status
+      });
+
+      closeModal();
+      showToast('تم تحديث البيانات بنجاح 💾');
+    } catch (err) {
+      console.error(err);
+      alert('حدث خطأ أثناء التحديث.');
+    }
+  });
 </script>
 
 </body>
